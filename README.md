@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/cristicbz/sync-splitter?branch=master)](https://travis-ci.org/cristicbz/sync-splitter)
+[![Build Status](https://travis-ci.org/cristicbz/sync-splitter.svg?branch=master)](https://travis-ci.org/cristicbz/sync-splitter)
+[![Docs](https://docs.rs/sync-splitter/badge.svg)](https://docs.rs/sync-splitter)
 
 SyncSplitter
 ===
@@ -14,17 +15,10 @@ You kinda need this sort of thing to build trees or graphs in parallel (eg. with
 individually. The motivating case was a
 [BVH](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy) implementation.
 
-* [Documentation](https://docs.rs/sync-splitter) for more information.
 
 Example
 ===
 ```rust
-# mod rayon {
-#   pub fn join<A: FnOnce(), B: FnOnce()>(a: A, b: B) {
-#       a();
-#       b();
-#   }
-# }
 use sync_splitter::SyncSplitter;
 
 // We'll build a binary tree and store it in an array where each node points to its first,
