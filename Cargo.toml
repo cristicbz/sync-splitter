@@ -1,0 +1,6 @@
+[package]
+name = "sync_splitter"
+version = "0.1.0"
+authors = ["Cristi Cobzarenco <cristi.cobzarenco@gmail.com>"]
+
+[dependencies]
