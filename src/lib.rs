@@ -112,6 +112,7 @@ impl<'a, T: 'a + Sync> SyncSplitter<'a, T> {
     ///
     /// Returns `None` if the underlying slice had one or zero elements left. Note that this
     /// exhausts the slice even when only one element was left (and said element is not returned).
+    #[inline]
     pub fn pop_two(&self) -> Option<((&mut T, &mut T), usize)> {
         let index = self.next.fetch_add(2, Ordering::SeqCst);
         if index < self.len - 1 {
