@@ -3,4 +3,12 @@ name = "sync_splitter"
 version = "0.1.0"
 authors = ["Cristi Cobzarenco <cristi.cobzarenco@gmail.com>"]
 
+description = "Safely split a mutable slice in multiple threads at the same time."
+homepage = "https://github.com/cristicbz/sync-splitter"
+repository = "https://github.com/cristicbz/sync-splitter"
+documentation = "https://docs.rs/sync-splitter"
+readme = "README.md"
+keywords = ["parallel", "sync", "split", "slice", "graph", "tree"]
+license = "MIT/Apache-2.0"
+
 [dependencies]
