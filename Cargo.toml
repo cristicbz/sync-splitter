@@ -8,7 +8,7 @@ homepage = "https://github.com/cristicbz/sync-splitter"
 repository = "https://github.com/cristicbz/sync-splitter"
 documentation = "https://docs.rs/sync-splitter"
 readme = "README.md"
-keywords = ["parallel", "sync", "split", "slice", "graph", "tree"]
+keywords = ["parallel", "sync", "split", "slice", "tree"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
