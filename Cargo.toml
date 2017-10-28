@@ -14,7 +14,7 @@ license = "MIT/Apache-2.0"
 name = "sync_splitter"
 readme = "README.md"
 repository = "https://github.com/cristicbz/sync-splitter"
-version = "0.4.0"
+version = "0.4.1"
 
 [dev-dependencies]
 rayon = "0.8.2"

@@ -80,7 +80,7 @@ impl<'a, T: 'a + Sync> SyncSplitter<'a, T> {
     /// Panics
     /// ===
     ///
-    /// If `slice.len() >= isize::MAX`.
+    /// If `slice.len() > isize::MAX`.
     pub fn new(slice: &'a mut [T]) -> Self {
         assert!(slice.len() <= isize::max_value() as usize);
         SyncSplitter {
