@@ -244,18 +244,21 @@ mod tests {
         assert!(splitter.pop().is_none());
     }
 
-    #[test]
-    #[should_panic]
-    fn length_more_than_isize_max_panics() {
-        let mut buffer = [(); isize::MAX as usize + 1];
-        let _splitter = SyncSplitter::new(&mut buffer);
-    }
+    // TODO(cristicbz): Following tests are disabled due to an LLVM assertion:
+    //     https://github.com/rust-lang/rust/issues/34127
+    // Un-comment once that's fixed.
+    //#[test]
+    //#[should_panic]
+    //fn length_more_than_isize_max_panics() {
+    //    let mut buffer = [(); isize::MAX as usize + 1];
+    //    let _splitter = SyncSplitter::new(&mut buffer);
+    //}
 
-    #[test]
-    fn isize_max_is_ok() {
-        let mut buffer = [(); isize::MAX as usize];
-        let _splitter = SyncSplitter::new(&mut buffer);
-    }
+    //#[test]
+    //fn isize_max_is_ok() {
+    //    let mut buffer = [(); isize::MAX as usize];
+    //    let _splitter = SyncSplitter::new(&mut buffer);
+    //}
 
     #[test]
     fn isize_max_minus_one_then_pop_min_is_ok() {
