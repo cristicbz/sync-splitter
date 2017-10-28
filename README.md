@@ -4,11 +4,12 @@
 SyncSplitter
 ===
 
-A `SyncSplitter` allows multiple threads to split a mutable slice at the same time.
+A `SyncSplitter` allows multiple threads to split a mutable slice at the same
+time.
 
-It's a bit like a `Sync` arena, where you can 'allocate' elements in the same
-`Vec` (or some other mutable slice) in parallel, then at the end get back the
-elements.
+It's a bit like a `Sync` [arena](https://stackoverflow.com/a/12825221), where
+you can 'allocate' elements in the same `Vec` (or some other mutable slice) in
+parallel, then at the end get back the elements.
 
 You kinda need this sort of thing to build trees or graphs in parallel (eg. with
 [rayon](https://github.com/rayon-rs/rayon)) without allocating each node
