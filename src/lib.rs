@@ -106,8 +106,7 @@ impl<'a, T: 'a + Sync> SyncSplitter<'a, T> {
     ///
     /// Also return the returned slice's offset into the original slice.
     ///
-    /// Returns `None` if the underlying slice had one or zero elements left. Note that this
-    /// exhausts the slice even when only one element was left (and said element is not returned).
+    /// Returns `None` if the underlying slice doesn't have enough elements left.
     #[inline]
     pub fn pop_two(&self) -> Option<((&mut T, &mut T), usize)> {
         self.bump(2).map(|index| {
@@ -127,9 +126,7 @@ impl<'a, T: 'a + Sync> SyncSplitter<'a, T> {
     ///
     /// Also return the returned slice's offset into the original slice.
     ///
-    /// Returns `None` if not enough elements were left in the underlying slice. Note that this
-    /// exhausts the slice even though no elements are returned. Any further calls to `pop` will
-    /// return `None`.
+    /// Returns `None` if not enough elements were left in the underlying slice.
     #[inline]
     pub fn pop_n(&self, len: usize) -> Option<(&mut [T], usize)> {
         self.bump(len).map(|index| {
@@ -144,18 +141,26 @@ impl<'a, T: 'a + Sync> SyncSplitter<'a, T> {
     /// Consumes the splitter and returns the total number of popped elements.
     #[inline]
     pub fn done(self) -> usize {
-        self.next.load(Ordering::SeqCst)
+        // This could probably be `Relaxed`. At this point, we have unique ownership of this, so all
+        // the other threads must have `join`'d. But I'm not taking any chances.
+        self.next.load(Ordering::Acquire)
     }
 
-
     fn bump(&self, len: usize) -> Option<usize> {
-        assert!(isize::max_value() as usize - self.len >= len);
-        let index = self.next.fetch_add(len, Ordering::SeqCst);
-        if len < self.len && index <= self.len - len {
-            Some(index)
-        } else {
-            self.next.store(self.len, Ordering::SeqCst);
-            None
+        loop {
+            let index = self.next.load(Ordering::Acquire);
+            if len <= self.len && index <= self.len - len {
+                if self.next.compare_and_swap(
+                    index,
+                    index + len,
+                    Ordering::AcqRel,
+                ) == index
+                {
+                    return Some(index);
+                }
+            } else {
+                return None;
+            }
         }
     }
 }
@@ -168,7 +173,7 @@ mod tests {
     use std::isize;
 
     #[test]
-    fn basics() {
+    fn works_when_popping_exact_slice_length() {
         let mut buffer = [1u32, 2, 3, 4, 5];
         let splitter = SyncSplitter::new(&mut buffer);
 
@@ -181,19 +186,19 @@ mod tests {
     }
 
     #[test]
-    fn runs_out() {
+    fn works_when_running_out_of_slice() {
         let mut buffer = [1u32, 2, 3, 4, 5];
         let splitter = SyncSplitter::new(&mut buffer);
 
         splitter.pop_n(3);
         assert_eq!(splitter.pop_n(3), None);
-        assert_eq!(splitter.pop_n(1), None);
-        assert_eq!(splitter.pop(), None);
-        assert_eq!(splitter.done(), 5);
+        assert_eq!(splitter.pop(), Some((&mut 4u32, 3)));
+        assert_eq!(splitter.pop_two(), None);
+        assert_eq!(splitter.done(), 4);
     }
 
     #[test]
-    fn reads_writes() {
+    fn reads_what_was_written() {
         let mut buffer = [1u32, 2, 3, 4, 5, 6];
         {
             let splitter = SyncSplitter::new(&mut buffer);
@@ -216,35 +221,42 @@ mod tests {
     }
 
     #[test]
-    fn check_len_underflow() {
+    fn len_does_not_underflow() {
         let mut buffer = [1u32, 2, 3, 4, 5];
         let splitter = SyncSplitter::new(&mut buffer);
 
-        splitter.pop_n(3);
+        splitter.pop_n(2);
         assert_eq!(splitter.pop_n(100), None);
-        assert_eq!(splitter.pop_n(1), None);
-        assert_eq!(splitter.pop(), None);
-        assert_eq!(splitter.done(), 5);
+        assert_eq!(splitter.pop_n(1), Some((&mut [3u32][..], 2)));
+        assert_eq!(splitter.pop(), Some((&mut 4u32, 3)));
+        assert_eq!(splitter.done(), 4);
+    }
+
+    #[test]
+    fn next_does_not_overflow() {
+        let mut buffer = [(); isize::MAX as usize];
+        let splitter = SyncSplitter::new(&mut buffer);
+        assert!(splitter.pop_n(isize::MAX as usize).is_some());
+        assert!(splitter.pop().is_none());
     }
 
     #[test]
     #[should_panic]
-    fn check_next_overflow() {
-        let mut buffer = [(); isize::MAX as usize];
-        let splitter = SyncSplitter::new(&mut buffer);
-        splitter.pop();
+    fn length_more_than_isize_max_panics() {
+        let mut buffer = [(); isize::MAX as usize + 1];
+        let _splitter = SyncSplitter::new(&mut buffer);
     }
 
     #[test]
-    fn check_isize_max_ok() {
+    fn isize_max_is_ok() {
         let mut buffer = [(); isize::MAX as usize];
         let _splitter = SyncSplitter::new(&mut buffer);
     }
 
     #[test]
-    fn check_isize_max_minus_one_pop_ok() {
+    fn isize_max_minus_one_then_pop_min_is_ok() {
         let mut buffer = [(); isize::MAX as usize - 1];
         let splitter = SyncSplitter::new(&mut buffer);
-        splitter.pop();
+        assert_eq!(splitter.pop(), Some((&mut (), 0)));
     }
 }
