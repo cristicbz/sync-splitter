@@ -57,6 +57,8 @@
 //! // `arena` now contains all the nodes in our binary tree.
 //!
 //! ```
+#[cfg(test)]
+extern crate rayon;
 
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -169,8 +171,10 @@ unsafe impl<'a, T: Sync> Sync for SyncSplitter<'a, T> {}
 
 #[cfg(test)]
 mod tests {
+    use rayon;
     use super::SyncSplitter;
     use std::isize;
+    use std::collections::HashMap;
 
     #[test]
     fn works_when_popping_exact_slice_length() {
@@ -258,5 +262,52 @@ mod tests {
         let mut buffer = [(); isize::MAX as usize - 1];
         let splitter = SyncSplitter::new(&mut buffer);
         assert_eq!(splitter.pop(), Some((&mut (), 0)));
+    }
+
+
+    #[derive(Default, Copy, Clone)]
+    struct Node {
+        height: u32,
+        _first_child_index: Option<usize>,
+    }
+
+    fn create_children(parent: &mut Node, splitter: &SyncSplitter<Node>, height: u32) {
+        if height == 0 {
+            return;
+        }
+
+        let ((left, right), first_child_index) = splitter.pop_two().unwrap();
+        *parent = Node {
+            height,
+            _first_child_index: Some(first_child_index),
+        };
+        rayon::join(|| create_children(left, splitter, height - 1), || {
+            create_children(right, splitter, height - 1)
+        });
+    }
+
+    #[test]
+    fn binary_tree_with_rayon_works() {
+        const DEPTH: u32 = 9;
+        const EXPECTED_NODES: usize = 1023;
+
+        let mut arena = vec![Node::default(); EXPECTED_NODES];
+        let num_nodes = {
+            let splitter = SyncSplitter::new(&mut arena);
+            {
+                let (root, _) = splitter.pop().expect("arena too small");
+                create_children(root, &splitter, DEPTH);
+            }
+            splitter.done()
+        };
+        assert_eq!(num_nodes, EXPECTED_NODES);
+        let mut counts = HashMap::new();
+        for node in &arena {
+            *counts.entry(node.height).or_insert(0) += 1;
+        }
+
+        for (&height, &count) in &counts {
+            assert_eq!(1 << (DEPTH - height), count, "{}", height);
+        }
     }
 }
