@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/cristicbz/sync-splitter.svg?branch=master)](https://travis-ci.org/cristicbz/sync-splitter)
-[![Docs](https://docs.rs/sync-splitter/badge.svg)](https://docs.rs/sync_splitter)
+[![Docs](https://docs.rs/sync_splitter/badge.svg)](https://docs.rs/sync_splitter)
 
 SyncSplitter
 ===
